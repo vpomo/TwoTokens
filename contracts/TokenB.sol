@@ -254,7 +254,7 @@ contract TokenB is StandardToken {
     constructor(address _owner) public {
         totalSupply = INITIAL_SUPPLY;
         owner = _owner;
-        //owner = msg.sender; // for testing
+        owner = msg.sender; // for testing
         balances[owner] = INITIAL_SUPPLY;
         transfersEnabled = true;
         mintingFinished = false;

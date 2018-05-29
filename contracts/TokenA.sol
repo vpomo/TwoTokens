@@ -256,7 +256,7 @@ contract TokenA is StandardToken {
     constructor(address _owner) public {
         totalSupply = INITIAL_SUPPLY;
         owner = _owner;
-        //owner = msg.sender; // for testing
+        owner = msg.sender; // for testing
         balances[owner] = INITIAL_SUPPLY;
         transfersEnabled = true;
     }
@@ -302,9 +302,9 @@ contract TokenA is StandardToken {
     }
 
     /**
- * Peterson's Law Protection
- * Claim tokens
- */
+     * Peterson's Law Protection
+     * Claim tokens
+     */
     function claimTokens(address _token) public onlyOwner {
         if (_token == 0x0) {
             owner.transfer(address(this).balance);
