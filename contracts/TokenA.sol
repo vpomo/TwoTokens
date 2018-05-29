@@ -236,6 +236,10 @@ contract StandardToken is ERC20, ERC223Token {
 
 }
 
+interface ITokenB {
+    function mint(address _to, uint256 _amount) external returns (bool);
+}
+
 contract TokenA is StandardToken {
 
     string public constant name = "Token A";
@@ -243,6 +247,8 @@ contract TokenA is StandardToken {
     uint8 public constant decimals = 2;
     uint256 public constant INITIAL_SUPPLY = 10**10 * (10**uint256(decimals));
     address public owner;
+    ITokenB public contractTokenB;
+
 
     event OwnerChanged(address indexed previousOwner, address indexed newOwner);
     event TokenBurned(address indexed owner, uint256 amountTokens);
@@ -276,15 +282,37 @@ contract TokenA is StandardToken {
         transfersEnabled = _transfersEnabled;
     }
 
+    function initContractTokenB (address _addressContract) public onlyOwner {
+        require(_addressContract != address(0));
+        contractTokenB = ITokenB(_addressContract);
+    }
+
     function burn(uint256 _amount) public returns (bool){
         require(0 < _amount);
-        require(_amount <= balances[msg.sender]);
-        require(_amount < totalSupply);
+        address _owner = msg.sender;
+        require(_amount <= balances[_owner]);
+        require(_amount <= totalSupply);
 
-        balances[msg.sender] = balances[msg.sender].sub(_amount);
+        balances[_owner] = balances[_owner].sub(_amount);
         totalSupply = totalSupply.sub(_amount);
+        contractTokenB.mint(_owner, _amount);
 
         emit TokenBurned(msg.sender, _amount);
         return true;
+    }
+
+    /**
+ * Peterson's Law Protection
+ * Claim tokens
+ */
+    function claimTokens(address _token) public onlyOwner {
+        if (_token == 0x0) {
+            owner.transfer(address(this).balance);
+            return;
+        }
+        TokenA token = TokenA(_token);
+        uint256 balance = token.balanceOf(this);
+        token.transfer(owner, balance);
+        emit Transfer(_token, owner, balance);
     }
 }

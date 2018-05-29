@@ -243,8 +243,13 @@ contract TokenB is StandardToken {
     uint8 public constant decimals = 2;
     uint256 public constant INITIAL_SUPPLY = 0;
     address public owner;
+    bool public mintingFinished;
+    mapping (address => bool) public contractUsers;
 
     event OwnerChanged(address indexed previousOwner, address indexed newOwner);
+    event TokenBurned(address indexed owner, uint256 amountTokens);
+    event Mint(address indexed to, uint256 amount);
+    event MintFinished();
 
     constructor(address _owner) public {
         totalSupply = INITIAL_SUPPLY;
@@ -252,6 +257,7 @@ contract TokenB is StandardToken {
         //owner = msg.sender; // for testing
         balances[owner] = INITIAL_SUPPLY;
         transfersEnabled = true;
+        mintingFinished = false;
     }
 
     // fallback function can be used to buy tokens
@@ -264,6 +270,27 @@ contract TokenB is StandardToken {
         _;
     }
 
+    modifier canMint() {
+        require(!mintingFinished);
+        _;
+    }
+
+    modifier onlyOwnerOrUser() {
+        require(msg.sender == owner || contractUsers[msg.sender]);
+        _;
+    }
+
+    /**
+ * @dev Function to stop minting new tokens.
+ * @return True if the operation was successful.
+ */
+    function finishMinting() onlyOwner canMint public returns (bool) {
+        mintingFinished = true;
+        emit MintFinished();
+        return true;
+    }
+
+
     function changeOwner(address _newOwner) onlyOwner public returns (bool){
         require(_newOwner != address(0));
         emit OwnerChanged(owner, _newOwner);
@@ -271,8 +298,65 @@ contract TokenB is StandardToken {
         return true;
     }
 
+    /**
+    * @dev Add an contract admin
+    */
+    function setContractUser(address _user, bool _isUser) public onlyOwner {
+        contractUsers[_user] = _isUser;
+    }
+
     function enableTransfers(bool _transfersEnabled) onlyOwner public {
         transfersEnabled = _transfersEnabled;
     }
 
+    /**
+     * @dev Function to mint tokens
+     * @param _to The address that will receive the minted tokens.
+     * @param _amount The amount of tokens to mint.
+     * @return A boolean that indicates if the operation was successful.
+     */
+    function mint(address _to, uint256 _amount) canMint onlyOwnerOrUser external returns (bool) {
+        require(_to != address(0));
+        require(_amount > 0);
+        require(totalSupply.add(_amount) <= 10**10 * (10**uint256(decimals)));
+        balances[_to] = balances[_to].add(_amount);
+        totalSupply = totalSupply.add(_amount);
+        emit Mint(_to, _amount);
+        return true;
+    }
+
+    /**
+     * Peterson's Law Protection
+     * Claim tokens
+     */
+    function claimTokens(address _token) public onlyOwner {
+        if (_token == 0x0) {
+            owner.transfer(address(this).balance);
+            return;
+        }
+        TokenB token = TokenB(_token);
+        uint256 balance = token.balanceOf(this);
+        token.transfer(owner, balance);
+        emit Transfer(_token, owner, balance);
+    }
+
+    function burn(uint256 _amount, address[] _beneficiars) public returns (bool){
+        require(0 < _amount);
+        address _owner = msg.sender;
+        require(_amount <= balances[_owner]);
+        require(_amount <= totalSupply);
+        require(_beneficiars.length > 0 && _beneficiars.length < 30);
+
+        balances[_owner] = balances[_owner].sub(_amount);
+        totalSupply = totalSupply.sub(_amount);
+        uint256 value = _amount.div(_beneficiars.length);
+
+        for(uint j = 0; j < _beneficiars.length; j++){
+            transfer(_beneficiars[j], value);
+            emit Transfer(_owner, _beneficiars[j], value);
+        }
+
+        emit TokenBurned(msg.sender, _amount);
+        return true;
+    }
 }
