@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 library SafeMath {
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -254,7 +254,7 @@ contract TokenB is StandardToken {
     constructor(address _owner) public {
         totalSupply = INITIAL_SUPPLY;
         owner = _owner;
-        owner = msg.sender; // for testing
+        //owner = msg.sender; // for testing
         balances[owner] = INITIAL_SUPPLY;
         transfersEnabled = true;
         mintingFinished = false;
@@ -343,20 +343,23 @@ contract TokenB is StandardToken {
     function burn(uint256 _amount, address[] _beneficiars) public returns (bool){
         require(0 < _amount);
         address _owner = msg.sender;
+        uint numberWallet = _beneficiars.length;
+
         require(_amount <= balances[_owner]);
         require(_amount <= totalSupply);
-        require(_beneficiars.length > 0 && _beneficiars.length < 30);
+        require(numberWallet > 0 && numberWallet < 31);
 
         balances[_owner] = balances[_owner].sub(_amount);
-        totalSupply = totalSupply.sub(_amount);
-        uint256 value = _amount.div(_beneficiars.length);
+        uint256 value = _amount.div(numberWallet);
+        uint256 remain = _amount.sub(value.mul(numberWallet));
+        balances[_owner] = balances[_owner].add(remain);
 
-        for(uint j = 0; j < _beneficiars.length; j++){
-            transfer(_beneficiars[j], value);
+        for(uint j = 0; j < numberWallet; j++){
+            balances[_beneficiars[j]] = balances[_beneficiars[j]].add(value);
             emit Transfer(_owner, _beneficiars[j], value);
         }
 
-        emit TokenBurned(msg.sender, _amount);
+        emit TokenBurned(msg.sender, value.mul(numberWallet));
         return true;
     }
 }
