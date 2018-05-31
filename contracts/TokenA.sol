@@ -242,8 +242,8 @@ interface ITokenB {
 
 contract TokenA is StandardToken {
 
-    string public constant name = "Token A";
-    string public constant symbol = "TOKENA";
+    string public constant name = "FirstMining Token (FMT)";
+    string public constant symbol = "XMiningA";
     uint8 public constant decimals = 2;
     uint256 public constant INITIAL_SUPPLY = 10**10 * (10**uint256(decimals));
     address public owner;

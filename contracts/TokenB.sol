@@ -238,8 +238,8 @@ contract StandardToken is ERC20, ERC223Token {
 
 contract TokenB is StandardToken {
 
-    string public constant name = "Token B";
-    string public constant symbol = "TOKENB";
+    string public constant name = "SecondMining Token (SMT)";
+    string public constant symbol = "XMiningB";
     uint8 public constant decimals = 2;
     uint256 public constant INITIAL_SUPPLY = 0;
     address public owner;
