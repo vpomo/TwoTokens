@@ -3,7 +3,7 @@ var TokenB = artifacts.require("./TokenB.sol");
 
 var contractA;
 var contractB;
-//var owner = "0xbA22878a8E5f411D9C0F42eE34aC4B1A3950763D";
+//var owner = "0x8180826dc88a61176496210d3ce70cfe02f7ec74";
 var maxTotalSupply = 1e27;
 var OneToken = 121;
 
