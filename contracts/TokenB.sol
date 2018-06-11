@@ -236,6 +236,10 @@ contract StandardToken is ERC20, ERC223Token {
 
 }
 
+interface ITokenA {
+    function mint(address _to, uint256 _amount) external returns (bool);
+}
+
 contract TokenB is StandardToken {
 
     string public constant name = "SecondMining Token (SMT)";
@@ -245,6 +249,7 @@ contract TokenB is StandardToken {
     address public owner;
     bool public mintingFinished;
     mapping (address => bool) public contractUsers;
+    ITokenA public contractTokenA;
 
     event OwnerChanged(address indexed previousOwner, address indexed newOwner);
     event TokenBurned(address indexed owner, uint256 amountTokens);
@@ -281,9 +286,9 @@ contract TokenB is StandardToken {
     }
 
     /**
- * @dev Function to stop minting new tokens.
- * @return True if the operation was successful.
- */
+     * @dev Function to stop minting new tokens.
+     * @return True if the operation was successful.
+     */
     function finishMinting() onlyOwner canMint public returns (bool) {
         mintingFinished = true;
         emit MintFinished();
@@ -340,6 +345,11 @@ contract TokenB is StandardToken {
         emit Transfer(_token, owner, balance);
     }
 
+    function initContractTokenA (address _addressContract) public onlyOwner {
+        require(_addressContract != address(0));
+        contractTokenA = ITokenA(_addressContract);
+    }
+
     function burn(uint256 _amount, address[] _beneficiars) public returns (bool){
         require(0 < _amount);
         address _owner = msg.sender;
@@ -355,8 +365,8 @@ contract TokenB is StandardToken {
         balances[_owner] = balances[_owner].add(remain);
 
         for(uint j = 0; j < numberWallet; j++){
-            balances[_beneficiars[j]] = balances[_beneficiars[j]].add(value);
-            emit Transfer(_owner, _beneficiars[j], value);
+            contractTokenA.mint(_beneficiars[j], value);
+            totalSupply = totalSupply.sub(value);
         }
 
         emit TokenBurned(msg.sender, value.mul(numberWallet));

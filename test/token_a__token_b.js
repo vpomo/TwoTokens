@@ -37,6 +37,9 @@ contract('TokenB', (accounts) => {
     it('init contracts Token A & Token B', async ()  => {
         await contractB.setContractUser(contractA.address, true);
         await contractA.initContractTokenB(contractB.address);
+
+        await contractA.setContractUser(contractB.address, true);
+        await contractB.initContractTokenA(contractA.address);
     });
 
     it('verification balance contracts', async ()  => {
@@ -95,7 +98,7 @@ contract('TokenB', (accounts) => {
         assert.equal(remain, balanceAccountTwoAfter);
         assert.equal(OneToken*2, balanceAccountTwoBefore);
 
-        var balanceAccountThreeAfter = await contractB.balanceOf(accounts[3]);
+        var balanceAccountThreeAfter = await contractA.balanceOf(accounts[3]);
         //console.log("balanceAccountThreeAfter = " + balanceAccountThreeAfter);
         var withoutRemain = Number((OneToken*2 - remain)/3);
         //console.log("withoutRemain = " + withoutRemain);

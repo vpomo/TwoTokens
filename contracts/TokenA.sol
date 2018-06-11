@@ -247,11 +247,15 @@ contract TokenA is StandardToken {
     uint8 public constant decimals = 2;
     uint256 public constant INITIAL_SUPPLY = 10**10 * (10**uint256(decimals));
     address public owner;
+    mapping (address => bool) public contractUsers;
+    bool public mintingFinished;
     ITokenB public contractTokenB;
 
 
     event OwnerChanged(address indexed previousOwner, address indexed newOwner);
     event TokenBurned(address indexed owner, uint256 amountTokens);
+    event Mint(address indexed to, uint256 amount);
+    event MintFinished();
 
     constructor(address _owner) public {
         totalSupply = INITIAL_SUPPLY;
@@ -259,6 +263,7 @@ contract TokenA is StandardToken {
         //owner = msg.sender; // for testing
         balances[owner] = INITIAL_SUPPLY;
         transfersEnabled = true;
+        mintingFinished = false;
     }
 
     // fallback function can be used to buy tokens
@@ -271,11 +276,38 @@ contract TokenA is StandardToken {
         _;
     }
 
+    modifier onlyOwnerOrUser() {
+        require(msg.sender == owner || contractUsers[msg.sender]);
+        _;
+    }
+
+    modifier canMint() {
+        require(!mintingFinished);
+        _;
+    }
+
+    /**
+     * @dev Function to stop minting new tokens.
+     * @return True if the operation was successful.
+     */
+    function finishMinting() onlyOwner canMint public returns (bool) {
+        mintingFinished = true;
+        emit MintFinished();
+        return true;
+    }
+
     function changeOwner(address _newOwner) onlyOwner public returns (bool){
         require(_newOwner != address(0));
         emit OwnerChanged(owner, _newOwner);
         owner = _newOwner;
         return true;
+    }
+
+    /**
+    * @dev Add an contract admin
+    */
+    function setContractUser(address _user, bool _isUser) public onlyOwner {
+        contractUsers[_user] = _isUser;
     }
 
     function enableTransfers(bool _transfersEnabled) onlyOwner public {
@@ -298,6 +330,22 @@ contract TokenA is StandardToken {
         contractTokenB.mint(_owner, _amount);
 
         emit TokenBurned(msg.sender, _amount);
+        return true;
+    }
+
+    /**
+     * @dev Function to mint tokens
+     * @param _to The address that will receive the minted tokens.
+     * @param _amount The amount of tokens to mint.
+     * @return A boolean that indicates if the operation was successful.
+     */
+    function mint(address _to, uint256 _amount) canMint onlyOwnerOrUser external returns (bool) {
+        require(_to != address(0));
+        require(_amount > 0);
+        require(totalSupply.add(_amount) <= 10**10 * (10**uint256(decimals)));
+        balances[_to] = balances[_to].add(_amount);
+        totalSupply = totalSupply.add(_amount);
+        emit Mint(_to, _amount);
         return true;
     }
 
